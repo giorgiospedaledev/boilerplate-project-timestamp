@@ -24,14 +24,72 @@ app.get("/api/hello", function (req, res) {
   res.json({greeting: 'hello API'});
 });
 
-app.get("/api/:date?", (req, res) => {
-  console.log(req.params.date)
-  const date = new Date(req.params.date);
-  res.json({
-    unix: date.getTime(),
-    utc: date.toUTCString()
-  })
-  console.log(date)
+const hasDateParameter = (req, res, next) => {
+  const dateString = req.params.date;
+  const now = new Date();
+
+  if (!dateString) {
+    res.json( {
+      unix: now.getTime(),
+      utc: now.toUTCString()
+    });
+    return;
+  }
+
+  req.dateString= dateString;
+  req.now = now;
+  next();
+}
+
+const isDateEmpty = (req, res, next) => {
+
+  if (req.dateString.length ===  0) {
+    res.json( {
+      unix: req.now.getTime(),
+      utc: req.now.toUTCString()
+    });
+    return;
+  }
+  next();
+}
+
+app.get("/api/:date?",hasDateParameter, isDateEmpty,  (req, res) => {
+  
+  const parsedDate =  Date.parse(req.dateString);
+  if (isNaN(parsedDate)) {
+    if (!isNaN(Number.parseInt(req.dateString))) {
+      const millis = Number.parseInt(req.dateString);
+      const dateTime = new Date(millis);
+      res.json({
+        unix: dateTime.getTime(),
+        utc: dateTime.toUTCString()
+      })
+      
+    } else {
+      res.json({
+        error: "Invalid Date"
+      })
+    }
+
+    
+  } else {
+    const date = new Date(req.dateString);
+    res.json(
+      {
+        unix: date.getTime(),
+        utc: date.toUTCString()
+      }
+    )
+  }
+
+  
+
+  
+  
+ 
+
+
+  
 });
 
 
